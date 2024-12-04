@@ -45,6 +45,29 @@
   (or (gradually-decreasing? report)
       (gradually-increasing? report)))
 
+(defn make-variant [skip-idx report]
+  (loop [[n & more] report
+         acc []
+         pos 0]
+    (if (nil? n)
+      acc
+      (recur more
+             (if (not= pos skip-idx)
+               (conj acc n)
+               acc)
+             (inc pos)))))
+
+(defn variants [report]
+  (let [size (count report)]
+    (for [idx (range size)]
+      (make-variant idx report))))
+
+(defn tolerable? [report]
+  (->> (variants report)
+       (filter safe?)
+       first
+       some?))
+
 (def sample-reports
   "7 6 4 2 1
 1 2 7 8 9
@@ -55,34 +78,14 @@
 
 (comment
 
-  (def sample-report "9 7 6 2 1")
-
-  (->> (parse-line sample-report)
-       (partition 2 1)
-       (mapv #(apply delta %))
-       (every? accepted-distance?))
-
   (def part1-answer 559)
   (->> (reports #_sample-reports)
        (filter safe?)
        count)
 
-  ;; distances
-  (every? accepted-distance? [2 1 4 1]) ;; => false
-  (every? accepted-distance? [2 1 3 1]) ;; => true
-
-  (= true (gradually-decreasing? [3 2 1]))
-  (= true (gradually-decreasing? [5 2 1]))
-  (= false (gradually-decreasing? [6 2 1]))
-  (= false (gradually-decreasing? [3 2 2]))
-  (= false (gradually-decreasing? [1 2 3]))
-  (= false (gradually-decreasing? [1]))
-
-  (= false (gradually-increasing? [3 2 1]))
-  (= false (gradually-increasing? [1 2 2]))
-  (= true  (gradually-increasing? [1 2 3]))
-  (= true  (gradually-increasing? [1 2 5]))
-  (= false  (gradually-increasing? [1 2 6]))
-  (= false (gradually-increasing? [1]))
+  (def part2-answer 601)
+  (->> (reports #_sample-reports)
+       (filter #(or (safe? %) (tolerable? %)))
+       count)
 
   \n)
